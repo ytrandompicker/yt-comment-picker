@@ -2,50 +2,148 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Free YouTube Giveaway Comment Picker</title>
+<title>YouTube Giveaway Picker — Pro Edition</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
+/* ---------- GLOBAL DARK THEME ---------- */
 body {
-    font-family: Arial, sans-serif;
-    max-width: 600px;
-    margin: auto;
-    padding: 20px;
+    margin: 0;
+    font-family: 'Inter', Arial, sans-serif;
+    background: radial-gradient(circle at top, #1b1b1b, #000000);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
 }
-input, button {
-    padding: 10px;
-    font-size: 16px;
+
+/* ---------- MAIN CARD ---------- */
+.container {
     width: 100%;
-    margin-top: 10px;
+    max-width: 600px;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(18px);
+    border-radius: 24px;
+    padding: 35px;
+    box-shadow: 0 0 50px rgba(0,0,0,0.5);
+    animation: fadeIn 0.8s ease;
 }
-label {
-    margin-top: 10px;
-    display: block;
+
+/* Fade in */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-#status {
-    margin-top: 15px;
-    font-size: 18px;
-    font-weight: bold;
-}
-#winnerBox {
-    margin-top: 20px;
-    padding: 20px;
-    border: 2px solid #000;
-    display: none;
+
+/* ---------- HEADER ---------- */
+h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 5px;
     text-align: center;
 }
-.winnerCard {
-    font-size: 22px;
-    font-weight: bold;
-    animation: jump 0.3s ease;
+
+.subtitle {
+    text-align: center;
+    color: #bbb;
+    font-size: 16px;
+    margin-bottom: 30px;
 }
+
+/* ---------- INPUTS + BUTTONS ---------- */
+input, button {
+    width: 100%;
+    padding: 14px;
+    font-size: 17px;
+    border-radius: 14px;
+    border: none;
+    outline: none;
+    margin-top: 12px;
+}
+
+input {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
+input::placeholder {
+    color: #aaa;
+}
+
+button {
+    background: linear-gradient(135deg, #007aff, #0051ff);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+button:hover {
+    background: linear-gradient(135deg, #3395ff, #1a66ff);
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(0,122,255,0.4);
+}
+
+/* ---------- CHECKBOX ---------- */
+.checkbox-row {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+}
+
+/* ---------- STATUS BOX ---------- */
+#status {
+    margin-top: 20px;
+    padding: 18px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 12px;
+    text-align: center;
+    font-size: 17px;
+    min-height: 40px;
+}
+
+/* ---------- WINNER CARD ---------- */
+#winnerBox {
+    margin-top: 25px;
+    display: none;
+    padding: 25px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 18px;
+    text-align: center;
+    animation: fadeIn 0.6s ease;
+}
+
+.winnerName {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.winnerComment {
+    color: #ddd;
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+.winnerLink a {
+    color: #4da3ff;
+    text-decoration: none;
+    font-size: 17px;
+}
+
+/* Jump animation for winner */
 @keyframes jump {
-    0% { transform: scale(0.3); opacity: 0.2; }
-    50% { transform: scale(1.3); opacity: 0.9; }
+    0% { transform: scale(0.4); opacity: 0.3; }
+    50% { transform: scale(1.3); opacity: 1; }
     100% { transform: scale(1); opacity: 1; }
 }
+
 .randomCard {
-    padding: 5px;
+    padding: 6px;
     font-size: 20px;
     text-align: center;
 }
@@ -53,71 +151,57 @@ label {
 </head>
 <body>
 
-<h2>YouTube Giveaway Comment Picker</h2>
+<div class="container">
 
-<label>Paste YouTube Video Link:</label>
-<input id="videoLink" placeholder="https://www.youtube.com/watch?v=xxxx">
+    <h1>YouTube Giveaway Picker</h1>
+    <div class="subtitle">Premium Dark Edition — Fast • Clean • Modern</div>
 
-<label><input type="checkbox" id="filterDup"> Filter Duplicate Users</label>
+    <input id="videoLink" placeholder="Paste YouTube video link here">
 
-<button onclick="loadComments()">Load All Comments</button>
+    <div class="checkbox-row">
+        <input type="checkbox" id="filterDup">
+        <label for="filterDup">Filter Duplicate Users</label>
+    </div>
 
-<div id="status"></div>
+    <button onclick="loadComments()">Load All Comments</button>
 
-<button id="pickBtn" onclick="pickWinner()" style="display:none;">Pick Winner</button>
+    <div id="status"></div>
 
-<div id="winnerBox">
-    <div id="winner" class="winnerCard"></div>
-    <div id="winnerComment"></div>
-    <a id="winnerChannel" href="#" target="_blank">Visit Channel</a>
+    <button id="pickBtn" onclick="pickWinner()" style="display:none; margin-top:20px;">Pick Random Winner</button>
+
+    <div id="winnerBox">
+        <div id="winner" class="winnerName"></div>
+        <div id="winnerComment" class="winnerComment"></div>
+        <div class="winnerLink"><a id="winnerChannel" href="#" target="_blank">Visit Channel</a></div>
+    </div>
+
 </div>
 
 <script>
 const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxWXlfC2mT0u9K6ci3d1zX_ktTOTw4VOktdkj2yoVq1L8-8146f1ELcKMHmXW_am572/exec";
 
 let globalComments = [];
-let priorityUsers = [
-    "User1",
-    "User2",
-    "User3",
-    "User4",
-    "User5"
-];
+let priorityUsers = ["User1","User2","User3","User4","User5"];
 
-// UPDATED extractVideoId FUNCTION
+/* -------- FIXED VIDEO ID DETECTOR -------- */
 function extractVideoId(link) {
     try {
         const url = new URL(link);
-
-        // 1. Standard YouTube link
-        if (url.searchParams.get("v")) {
-            return url.searchParams.get("v");
-        }
-
-        // 2. Shorts link
-        if (url.pathname.startsWith("/shorts/")) {
-            return url.pathname.split("/")[2];
-        }
-
-        // 3. youtu.be short link
-        if (url.hostname === "youtu.be") {
-            return url.pathname.replace("/", "").split("?")[0];
-        }
-
-    } catch (err) {}
+        if (url.searchParams.get("v")) return url.searchParams.get("v");
+        if (url.pathname.startsWith("/shorts/")) return url.pathname.split("/")[2];
+        if (url.hostname === "youtu.be") return url.pathname.replace("/", "").split("?")[0];
+    } catch {}
     return null;
 }
 
+/* -------- LOAD COMMENTS -------- */
 async function loadComments() {
     const link = document.getElementById("videoLink").value.trim();
     const status = document.getElementById("status");
     const pickBtn = document.getElementById("pickBtn");
 
     const videoId = extractVideoId(link);
-    if (!videoId) {
-        status.innerHTML = "❌ Invalid YouTube URL";
-        return;
-    }
+    if (!videoId) return status.innerHTML = "❌ Invalid YouTube URL";
 
     status.innerHTML = "⏳ Loading comments...";
     pickBtn.style.display = "none";
@@ -126,10 +210,7 @@ async function loadComments() {
         const res = await fetch(`${BACKEND_URL}?videoId=${videoId}`);
         const data = await res.json();
 
-        if (!data.comments) {
-            status.innerHTML = "❌ Failed to load comments.";
-            return;
-        }
+        if (!data.comments) return status.innerHTML = "❌ Failed to load comments.";
 
         let list = data.comments;
 
@@ -141,19 +222,20 @@ async function loadComments() {
 
         globalComments = list;
 
-        status.innerHTML = 
-            `✅ Loaded ${data.comments.length} total comments<br>` +
-            `🎯 Unique Users: ${list.length}`;
+        status.innerHTML =
+            `✅ Total Comments Loaded: <b>${data.comments.length}</b><br>` +
+            `🎯 Unique Users: <b>${list.length}</b>`;
 
         pickBtn.style.display = "block";
 
     } catch (error) {
-        status.innerHTML = "❌ Error fetching comments.";
+        status.innerHTML = "❌ Error — could not fetch comments.";
     }
 }
 
+/* -------- PICK WINNER -------- */
 function pickWinner() {
-    if (globalComments.length === 0) return;
+    if (!globalComments.length) return;
 
     const winnerBox = document.getElementById("winnerBox");
     const winner = document.getElementById("winner");
@@ -166,27 +248,28 @@ function pickWinner() {
         priorityUsers.map(x => x.toLowerCase()).includes(c.author.toLowerCase())
     );
 
-    let poolToPickFrom = priorityList.length > 0 ? priorityList : globalComments;
+    let pool = priorityList.length ? priorityList : globalComments;
 
     let times = 25;
     let i = 0;
 
     const interval = setInterval(() => {
-        const random = poolToPickFrom[Math.floor(Math.random() * poolToPickFrom.length)];
-        document.getElementById("status").innerHTML = 
+        const random = pool[Math.floor(Math.random() * pool.length)];
+        document.getElementById("status").innerHTML =
             `<div class='randomCard'>${random.author}</div>`;
         i++;
 
         if (i >= times) {
             clearInterval(interval);
 
-            const final = poolToPickFrom[Math.floor(Math.random() * poolToPickFrom.length)];
+            const final = pool[Math.floor(Math.random() * pool.length)];
 
-            winner.innerHTML = final.author;
-            winnerComment.innerHTML = `"${final.comment}"`;
+            winner.textContent = final.author;
+            winnerComment.textContent = `"${final.comment}"`;
             winnerChannel.href = "https://youtube.com/channel/" + final.channelId;
 
             winnerBox.style.display = "block";
+            winnerBox.style.animation = "jump 0.5s ease";
         }
     }, 100);
 }
