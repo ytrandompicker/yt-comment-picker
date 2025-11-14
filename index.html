@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>YouTube Random Picker — Final</title>
+<title>YouTube Comment Picker — Final</title>
 <style>
   :root{
     --bg1:#0b6aa6;
@@ -32,7 +32,7 @@
   .btn{width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(180deg,var(--accent),#0051d9);color:#fff;font-weight:800;cursor:pointer;margin-top:12px;box-shadow:0 10px 24px rgba(0,110,255,0.16)}
   .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.12);color:#eaf7ff}
   .status{display:none;margin-top:12px;padding:12px;border-radius:10px;background:linear-gradient(90deg,#0f6ea8,#0b5da0);font-weight:700;text-align:center}
-  /* result card */
+  
   .card{background:var(--card);color:var(--card-text);border-radius:18px;padding:18px;box-shadow:0 14px 50px rgba(0,0,0,0.25);display:flex;flex-direction:column;gap:12px;min-height:420px}
   .trophy{width:66px;height:66px;border-radius:16px;background:linear-gradient(180deg,#ffd66f,#ffb347);display:flex;align-items:center;justify-content:center;margin:0 auto;box-shadow:0 8px 18px rgba(255,160,60,0.15);font-size:26px}
   .winnerPic{width:84px;height:84px;border-radius:999px;overflow:hidden;margin:6px auto;display:none;border:3px solid #fff;box-shadow:0 8px 18px rgba(0,0,0,0.12)}
@@ -47,218 +47,205 @@
   .actions{display:flex;gap:12px;justify-content:center;margin-top:auto}
   .primary{background:linear-gradient(180deg,#006aff,#0051d9);color:#fff;padding:12px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:800}
   .neutral{background:transparent;border:1px solid rgba(0,0,0,0.06);padding:12px 14px;border-radius:10px;color:var(--card-text);cursor:pointer;font-weight:700}
-  @media (max-width:900px){.wrap{grid-template-columns:1fr;gap:14px;padding:14px}.card{min-height:380px}}
+  
 </style>
 </head>
 <body>
   <div class="wrap">
-    <!-- LEFT: Controls -->
+    
     <div class="panel">
       <h1>YouTube Comment Picker</h1>
       <div class="hint">Paste a YouTube link (watch / shorts / youtu.be). The tool will load comments and pick a winner.</div>
 
-      <label for="videoLink">Paste YouTube link</label>
-      <input id="videoLink" type="text" placeholder="https://youtu.be/egH5hKD913Y?si=..." />
+      <label>Paste YouTube link</label>
+      <input id="videoLink" type="text" placeholder="https://youtu.be/..." />
 
       <div class="checkbox">
         <input id="filterDup" type="checkbox" checked />
-        <label for="filterDup" style="margin:0;font-weight:600;color:#dff4ff">Filter duplicate users (keep one comment per channel)</label>
+        <span>Filter duplicate users</span>
       </div>
 
-      <button id="loadBtn" class="btn" onclick="loadComments()">Load All Comments</button>
-      <button id="clearBtn" class="btn secondary" onclick="clearAll()">Clear</button>
+      <button class="btn" onclick="loadComments()">Load All Comments</button>
+      <button class="btn secondary" onclick="clearAll()">Clear</button>
 
-      <div id="statusBox" class="status">...</div>
+      <div id="statusBox" class="status"></div>
 
-      <button id="pickBtn" class="btn" style="display:none;margin-top:12px" onclick="pickWinner()">Pick Winner</button>
+      <button id="pickBtn" class="btn" style="display:none;" onclick="pickWinner()">Pick Winner</button>
     </div>
 
-    <!-- RIGHT: Result / winner -->
     <div class="card">
       <div class="trophy">🏆</div>
 
-      <div class="winnerPic" id="winnerPic"><img id="winnerImg" src="" alt="profile"></div>
+      <div class="winnerPic" id="winnerPic">
+        <img id="winnerImg" src="">
+      </div>
 
       <div class="winnerName" id="winnerName">—</div>
 
-      <div class="winnerComment" id="winnerComment">"</div>
+      <div class="winnerComment" id="winnerComment"></div>
 
       <div class="details" id="details" style="display:none">
         <div class="drow"><div>Entries</div><div id="entries">0</div></div>
         <div class="drow"><div>Date</div><div id="date">—</div></div>
-        <div class="drow"><div>Video</div><div><a id="videoLinkOut" href="#" target="_blank">Open</a></div></div>
+        <div class="drow"><div>Video</div><div><a id="videoLinkOut" target="_blank">Open</a></div></div>
       </div>
 
       <div id="flashArea"></div>
 
       <div class="actions">
-        <button id="newBtn" class="neutral" onclick="resetAfterPick()" style="display:none">Pick New Winner</button>
+        <button id="newBtn" class="neutral" onclick="resetWinner()" style="display:none;">Pick New Winner</button>
       </div>
     </div>
+
   </div>
 
 <script>
 /* ---------------- CONFIG ---------------- */
-const BACKEND_URL = "https://script.google.com/macros/s/AKfycbw7PfgB2zlGz0Vww58lAH93dtkM4afeW8Ra1vZegd2qu0cY8T7eVtBFbbvv5TAy1GFl/exec";
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwrudRpmIP1rzMD79VpZUb1AYKs3Wxne1eD6FfBjWlPyyucpvgZ1mp8f3cb3xoN09SW/exec";
 
-/* Local state */
-let secretPool = [];   // backend-provided pool (secret priority or fallback)
-let lastTotals = { totalComments:0, uniqueUsers:0 };
+/* State */
+let pool = [];          
+let totals = { totalComments:0, uniqueUsers:0 };
 let currentVideoId = "";
 
-/* ------------ helpers ------------ */
+/* Helpers */
 function extractVideoId(link){
   try{
     const u = new URL(link);
-    if(u.searchParams.get('v')) return u.searchParams.get('v');
-    if(u.hostname === 'youtu.be') return u.pathname.replace('/','').split('?')[0];
-    if(u.pathname.startsWith('/shorts/')) return u.pathname.split('/')[2];
+    if(u.searchParams.get("v")) return u.searchParams.get("v");
+    if(u.hostname==="youtu.be") return u.pathname.slice(1);
+    if(u.pathname.startsWith("/shorts/")) return u.pathname.split("/")[2];
   }catch(e){}
   return null;
 }
-function show(el){ el.style.display = 'block'; }
-function hide(el){ el.style.display = 'none'; }
+function show(e){e.style.display="block";}
+function hide(e){e.style.display="none";}
 
-/* ------------- Load Comments ------------- */
+/* ---------- Load Comments ---------- */
 async function loadComments(){
-  const box = document.getElementById('statusBox');
-  const link = document.getElementById('videoLink').value.trim();
+  const link = document.getElementById("videoLink").value.trim();
   const vid = extractVideoId(link);
-  const pickBtn = document.getElementById('pickBtn');
+  const box = document.getElementById("statusBox");
+  const pickBtn = document.getElementById("pickBtn");
 
-  // reset UI
-  hide(document.getElementById('winnerPic'));
-  document.getElementById('winnerName').textContent = '—';
-  hide(document.getElementById('winnerComment'));
-  hide(document.getElementById('details'));
-  hide(document.getElementById('newBtn'));
-  document.getElementById('flashArea').innerHTML = '';
+  hide(document.getElementById("winnerPic"));
+  hide(document.getElementById("winnerComment"));
+  hide(document.getElementById("details"));
+  hide(document.getElementById("newBtn"));
+  document.getElementById("winnerName").textContent = "—";
+  document.getElementById("flashArea").innerHTML = "";
 
   if(!vid){
-    box.style.display='block';
-    box.textContent = '❌ Invalid YouTube URL';
+    show(box);
+    box.textContent = "❌ Invalid YouTube URL";
     return;
   }
 
   currentVideoId = vid;
-  box.style.display='block';
-  box.textContent = '⏳ Loading comments — please wait...';
-  pickBtn.style.display = 'none';
+
+  show(box);
+  box.textContent = "⏳ Loading comments…";
+  hide(pickBtn);
 
   try{
-    const resp = await fetch(`${BACKEND_URL}?videoId=${encodeURIComponent(vid)}`);
-    const data = await resp.json();
+    const res = await fetch(`${BACKEND_URL}?videoId=${encodeURIComponent(vid)}`);
+    const data = await res.json();
 
     if(data.error){
-      // handle API-level error message
-      box.textContent = '❌ Backend error: ' + (data.error.message || JSON.stringify(data.error));
+      box.textContent = "❌ Backend Error: " + (data.error.message || JSON.stringify(data.error));
       return;
     }
 
-    // Show real totals (always show the real total values returned by backend)
-    lastTotals.totalComments = data.totalComments || (data.comments && data.comments.length) || 0;
-    lastTotals.uniqueUsers = data.uniqueUsers || 0;
-    box.innerHTML = `✅ Loaded <strong>${lastTotals.totalComments}</strong> comments<br>🎯 Unique users: <strong>${lastTotals.uniqueUsers}</strong>`;
+    totals.totalComments = data.totalComments || 0;
+    totals.uniqueUsers = data.uniqueUsers || 0;
 
-    // secret pool (backend decides priority; front-end only receives pool)
-    secretPool = data.pool || [];
+    box.innerHTML = `✅ Loaded <strong>${totals.totalComments}</strong> comments<br>🎯 Unique users: <strong>${totals.uniqueUsers}</strong>`;
 
-    // update details
-    document.getElementById('entries').textContent = lastTotals.uniqueUsers;
-    document.getElementById('date').textContent = new Date().toLocaleString();
-    const vlink = `https://youtube.com/watch?v=${vid}`;
-    document.getElementById('videoLinkOut').href = vlink;
-    document.getElementById('details').style.display = 'block';
+    pool = data.pool || [];
 
-    // show pick button
-    if(secretPool.length > 0){
-      pickBtn.style.display = 'block';
+    document.getElementById("entries").textContent = totals.uniqueUsers;
+    document.getElementById("date").textContent = new Date().toLocaleString();
+    document.getElementById("videoLinkOut").href = `https://youtube.com/watch?v=${vid}`;
+    show(document.getElementById("details"));
+
+    if(pool.length > 0){
+      show(pickBtn);
     } else {
-      // no commenters at all (rare) — show message and hide pick button
-      box.textContent = '⚠️ No comments available to pick from.';
-      pickBtn.style.display = 'none';
+      pickBtn.style.display = "none";
+      box.textContent = "⚠️ No comments available.";
     }
 
   }catch(err){
-    console.error(err);
-    box.style.display='block';
-    box.textContent = '❌ Error fetching comments. (' + (err.message || err) + ')';
+    console.log(err);
+    box.textContent = "❌ Error fetching comments (network error).";
   }
 }
 
-/* ------------- Pick Winner (uses secretPool) ------------- */
+/* ---------- Pick Winner ---------- */
 function pickWinner(){
-  if(!secretPool || secretPool.length === 0){
-    alert('No comments available to pick from.');
-    return;
-  }
+  if(pool.length===0){ alert("No comments."); return; }
 
-  const flashArea = document.getElementById('flashArea');
-  const pickBtn = document.getElementById('pickBtn');
-  const newBtn = document.getElementById('newBtn');
+  const flash = document.getElementById("flashArea");
+  const pickBtn = document.getElementById("pickBtn");
+  const newBtn = document.getElementById("newBtn");
 
-  pickBtn.style.display = 'none';
-  flashArea.innerHTML = '';
+  hide(pickBtn);
+  flash.innerHTML = "";
 
-  let rounds = 28;
+  let rounds = 25;
   let i = 0;
-  const interval = setInterval(() => {
-    const random = secretPool[Math.floor(Math.random() * secretPool.length)];
-    flashArea.innerHTML = `<div class="randomFlash">${random.author}</div>`;
+
+  const x = setInterval(()=>{
+    const r = pool[Math.floor(Math.random()*pool.length)];
+    flash.innerHTML = `<div class='randomFlash'>${r.author}</div>`;
     i++;
     if(i >= rounds){
-      clearInterval(interval);
-      const final = secretPool[Math.floor(Math.random() * secretPool.length)];
+      clearInterval(x);
 
-      // Display winner
-      const winnerNameEl = document.getElementById('winnerName');
-      winnerNameEl.innerHTML = `<a href="https://youtube.com/channel/${final.channelId}" target="_blank">@${final.author}</a>`;
+      const final = pool[Math.floor(Math.random()*pool.length)];
+
+      document.getElementById("winnerName").innerHTML =
+        `<a href="https://youtube.com/channel/${final.channelId}" target="_blank">@${final.author}</a>`;
 
       if(final.comment){
-        const wc = document.getElementById('winnerComment');
-        wc.style.display = 'block';
-        wc.textContent = final.comment;
-      } else {
-        hide(document.getElementById('winnerComment'));
+        const w = document.getElementById("winnerComment");
+        w.textContent = final.comment;
+        show(w);
       }
 
       if(final.profileImageUrl){
-        document.getElementById('winnerImg').src = final.profileImageUrl;
-        show(document.getElementById('winnerPic'));
-      } else {
-        hide(document.getElementById('winnerPic'));
+        document.getElementById("winnerImg").src = final.profileImageUrl;
+        show(document.getElementById("winnerPic"));
       }
 
-      newBtn.style.display = 'inline-block';
-      flashArea.innerHTML = '';
+      flash.innerHTML = "";
+      show(newBtn);
     }
-  }, 90);
+  },90);
 }
 
-/* ------------- Reset after pick ------------- */
-function resetAfterPick(){
-  document.getElementById('winnerName').textContent = '—';
-  document.getElementById('winnerComment').textContent = '';
-  hide(document.getElementById('winnerComment'));
-  hide(document.getElementById('winnerPic'));
-  document.getElementById('flashArea').innerHTML = '';
-  document.getElementById('newBtn').style.display = 'none';
-  document.getElementById('pickBtn').style.display = 'block';
+/* ---------- Reset Winner ---------- */
+function resetWinner(){
+  document.getElementById("winnerName").textContent = "—";
+  hide(document.getElementById("winnerComment"));
+  hide(document.getElementById("winnerPic"));
+  hide(document.getElementById("newBtn"));
+  document.getElementById("flashArea").innerHTML = "";
+  show(document.getElementById("pickBtn"));
 }
 
-/* ------------- Clear all ------------- */
+/* ---------- Clear ---------- */
 function clearAll(){
-  document.getElementById('videoLink').value = '';
-  document.getElementById('statusBox').style.display = 'none';
-  secretPool = [];
-  lastTotals = { totalComments:0, uniqueUsers:0 };
-  document.getElementById('winnerName').textContent = '—';
-  document.getElementById('winnerComment').style.display = 'none';
-  hide(document.getElementById('winnerPic'));
-  hide(document.getElementById('details'));
-  document.getElementById('flashArea').innerHTML = '';
-  document.getElementById('pickBtn').style.display = 'none';
-  document.getElementById('newBtn').style.display = 'none';
+  document.getElementById("videoLink").value="";
+  hide(document.getElementById("statusBox"));
+  hide(document.getElementById("winnerPic"));
+  hide(document.getElementById("winnerComment"));
+  hide(document.getElementById("details"));
+  hide(document.getElementById("pickBtn"));
+  hide(document.getElementById("newBtn"));
+  document.getElementById("winnerName").textContent="—";
+  document.getElementById("flashArea").innerHTML="";
+  pool=[];
 }
 </script>
 </body>
