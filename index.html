@@ -63,33 +63,63 @@ html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:var(
   display:none;flex-direction:column;align-items:center;gap:12px;
 }
 
-/* avatar fully visible on top */
-.avatar{width:140px;height:140px;border-radius:999px;overflow:hidden;border:8px solid var(--brand);display:none}
-.avatar img{width:100%;height:100%;object-fit:cover;display:block}
-
-/* handle and comment */
-.handle{display:none;text-align:center;font-weight:900;color:var(--brand);font-size:20px;margin-top:6px}
-.handle a{text-decoration:none;color:var(--brand)}
-.commentBox{display:none;background:#f7fbff;color:#114b63;padding:14px 18px;border-radius:12px;margin-top:6px;max-width:86%;text-align:center;box-shadow:0 8px 20px rgba(3,48,80,0.04)}
-
-/* start circle */
+/* start circle (big central area) */
 .startBox{display:none;align-items:center;flex-direction:column;margin-top:10px;position:relative}
-.startCircle{width:150px;height:150px;border-radius:999px;border:12px solid transparent;background:var(--white);display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--dark);cursor:pointer;box-shadow:0 28px 60px rgba(3,48,80,0.14);position:relative;overflow:visible}
+.startCircle{
+  width:150px;height:150px;border-radius:999px;border:12px solid transparent;
+  background:var(--white);display:flex;align-items:center;justify-content:center;
+  font-weight:900;color:var(--dark);cursor:pointer;box-shadow:0 28px 60px rgba(3,48,80,0.14);
+  position:relative;overflow:visible;
+}
 .startHint{color:#588aa8;margin-top:10px}
 
 /* progress ring (SVG positioned inside start circle) */
 .startCircle .progress-svg{position:absolute;left:0;top:0;width:100%;height:100%;transform:rotate(-90deg);pointer-events:none}
-.startCircle .progress-bg{stroke:rgba(0,0,0,0.05);stroke-width:10;fill:none}
+.startCircle .progress-bg{stroke:rgba(0,0,0,0.06);stroke-width:10;fill:none}
 .startCircle .progress-bar{stroke:var(--brand);stroke-width:10;fill:none;stroke-linecap:round;stroke-dasharray:0;stroke-dashoffset:0}
 
-/* center content (text or icon) */
-.startCircle .center-content{position:relative;z-index:2;font-weight:900;color:var(--dark);display:flex;align-items:center;justify-content:center}
+/* center content (trophy icon or avatar) */
+.center-content{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;flex-direction:column}
 
-/* smaller size when responsive */
+/* trophy icon */
+.trophy{
+  font-size:44px;
+  line-height:1;
+  color:#f2b33a;
+  display:block;
+  width:64px;
+  height:64px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* center avatar that will be placed inside circle when winner chosen */
+.center-avatar{
+  width:88px;height:88px;border-radius:999px;overflow:hidden;border:6px solid var(--brand);display:none;
+}
+.center-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* handle and comment below the circle */
+.handle{display:none;text-align:center;font-weight:900;color:var(--brand);font-size:20px;margin-top:12px}
+.handle a{text-decoration:none;color:var(--brand)}
+.commentBox{display:none;background:#f7fbff;color:#114b63;padding:14px 18px;border-radius:12px;margin-top:12px;max-width:86%;text-align:center;box-shadow:0 8px 20px rgba(3,48,80,0.04)}
+
+/* pick again + share */
+.pickAgain{display:none;margin-top:18px;width:220px;background:var(--brand);color:#fff;padding:12px;border-radius:12px;border:none;font-weight:900;cursor:pointer}
+.shareRow{display:none;margin-top:8px;gap:10px;align-items:center;display:flex}
+.shareBtn{background:#0b6aa6;color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:800}
+
+/* confetti */
+#confetti{position:fixed;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:9999}
+
+/* responsive */
 @media(max-width:720px){
   .title{font-size:30px}
-  .avatar{width:110px;height:110px;border-width:6px}
   .startCircle{width:120px;height:120px}
+  .startCircle .progress-svg{transform:rotate(-90deg)}
+  .center-avatar{width:72px;height:72px;border-width:5px}
+  .trophy{font-size:36px}
   .inputSmall{width:100%}
 }
 </style>
@@ -104,7 +134,6 @@ html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:var(
     <!-- MERGED WHITE CARD (link + filters + get total + count) -->
     <div class="whiteCard">
       <div class="labelText">VIDEO LINK BELOW</div>
-      <!-- input kept strictly inside the white card -->
       <input id="videoLink" class="inputMain" placeholder="Paste YouTube link here" />
 
       <div class="filterRow">
@@ -122,28 +151,35 @@ html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:var(
       <div id="countText" class="countText">Amount of comments: 0</div>
     </div>
 
-    <!-- STAGE: avatar on top, handle, comment, pick again -->
+    <!-- STAGE: big circle + handle + comment + pick again -->
     <div id="stage" class="stage">
       <div id="topHint" class="hintTiny">Click START to pick a winner</div>
 
-      <div id="avatarWrap" class="avatar"><img id="avatarImg" alt="profile" src="/mnt/data/Screenshot 2025-11-19 123255.png"></div>
-
-      <div id="handle" class="handle"></div>
-      <div id="commentBox" class="commentBox"></div>
-
       <div id="startBox" class="startBox">
         <div id="startCircle" class="startCircle" role="button" tabindex="0" aria-pressed="false">
-          <!-- SVG progress ring (stroke-dashoffset animated in JS) -->
           <svg class="progress-svg" viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
             <circle class="progress-bg" cx="75" cy="75" r="64"></circle>
             <circle id="progressBar" class="progress-bar" cx="75" cy="75" r="64" stroke-linecap="round"></circle>
           </svg>
 
-          <!-- center content (START text) -->
-          <div class="center-content" id="startLabel">START</div>
+          <div class="center-content">
+            <!-- trophy shown during shuffle -->
+            <div id="trophyIcon" class="trophy" aria-hidden="true">🏆</div>
+
+            <!-- center avatar replaces the trophy when winner is finalized -->
+            <div id="centerAvatar" class="center-avatar" aria-hidden="true">
+              <img id="centerAvatarImg" src="" alt="winner">
+            </div>
+
+            <!-- start label (before click) -->
+            <div id="startLabel" style="position:relative;z-index:3;font-weight:900;color:var(--dark)">START</div>
+          </div>
         </div>
-        <div class="startHint">Click to begin 10s raffle</div>
+        <div class="startHint" id="startHintText">Click to begin 10s raffle</div>
       </div>
+
+      <div id="handle" class="handle"></div>
+      <div id="commentBox" class="commentBox"></div>
 
       <button id="pickAgain" class="pickAgain">PICK A NEW WINNER</button>
 
@@ -160,7 +196,7 @@ html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:var(
 /* ---------- CONFIG ---------- */
 const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzS2QT2vSJ_RoXiQACij7iUWcmcJqFBHEelNrC7h1-XfRcdOx1gdQ1ZvJQuNruRRXM9xA/exec";
 const RAFFLE_DURATION_MS = 10000; // 10s
-const TICK_MS = 45; // smaller => faster, update avatar every tick
+const TICK_MS = 45; // tick for name/comment shuffle
 
 /* ---------- STATE ---------- */
 let comments = [];       // visual pool (unique)
@@ -182,10 +218,13 @@ const stage = document.getElementById('stage');
 const startBox = document.getElementById('startBox');
 const startCircle = document.getElementById('startCircle');
 const startLabel = document.getElementById('startLabel');
+const startHintText = document.getElementById('startHintText');
 const progressBar = document.getElementById('progressBar');
 
-const avatarWrap = document.getElementById('avatarWrap');
-const avatarImg = document.getElementById('avatarImg');
+const trophyIcon = document.getElementById('trophyIcon');
+const centerAvatar = document.getElementById('centerAvatar');
+const centerAvatarImg = document.getElementById('centerAvatarImg');
+
 const handleEl = document.getElementById('handle');
 const commentBox = document.getElementById('commentBox');
 
@@ -208,7 +247,7 @@ function animateProgress(durationMs){
   // reset
   progressBar.style.transition = 'none';
   progressBar.style.strokeDashoffset = CIRC;
-  // allow layout
+  // force reflow
   void progressBar.offsetWidth;
   // animate to 0
   progressBar.style.transition = `stroke-dashoffset ${durationMs}ms linear`;
@@ -241,11 +280,7 @@ loadBtn.addEventListener('click', async ()=>{
 
   // reset UI & state
   comments = []; pickPool = []; usedSet = new Set();
-  avatarWrap.style.display='none';
-  handleEl.style.display='none'; handleEl.textContent='';
-  commentBox.style.display='none'; commentBox.textContent='';
-  pickAgainBtn.style.display='none'; shareRow.style.display='none';
-  startBox.style.display='none'; stage.style.display='none';
+  hideWinnerUI();
   resetProgress();
 
   countText.innerHTML = '⏳ Loading comments...';
@@ -276,6 +311,13 @@ loadBtn.addEventListener('click', async ()=>{
     stage.style.display='flex';
     startBox.style.display='flex';
     startLabel.textContent = 'START';
+    trophyIcon.style.display = 'block';
+    centerAvatar.style.display = 'none';
+    handleEl.style.display = 'none';
+    commentBox.style.display = 'none';
+    pickAgainBtn.style.display = 'none';
+    shareRow.style.display = 'none';
+
     loadBtn.disabled = false;
   }catch(err){
     console.error(err);
@@ -286,7 +328,6 @@ loadBtn.addEventListener('click', async ()=>{
 
 /* ---------- CHOOSING & SEQUENCE ---------- */
 function chooseFinalLocal(){
-  // prefer prioritized pool if present & not used
   const prioritized = (pickPool || []).filter(p => !usedSet.has(p.channelId));
   if(prioritized.length) return prioritized[Math.floor(Math.random()*prioritized.length)];
   const pool = (comments || []).filter(c => !usedSet.has(c.channelId));
@@ -328,6 +369,24 @@ function launchConfetti(){
   }
 }
 
+/* ---------- show/hide helper UI ---------- */
+function hideWinnerUI(){
+  // reset center area to initial (trophy + START visible)
+  trophyIcon.style.display = 'block';
+  centerAvatar.style.display = 'none';
+  startLabel.style.display = 'block';
+  startLabel.textContent = 'START';
+  startHintText.style.display = 'block';
+
+  handleEl.style.display = 'none';
+  commentBox.style.display = 'none';
+  pickAgainBtn.style.display = 'none';
+  shareRow.style.display = 'none';
+
+  startCircle.setAttribute('aria-pressed','false');
+  startCircle.style.pointerEvents = 'auto';
+}
+
 /* ---------- finalize (persist async & show) ---------- */
 async function finalizeWinner(final){
   if(!final) return;
@@ -341,78 +400,107 @@ async function finalizeWinner(final){
     body: JSON.stringify({ action: 'markWinner', videoId: currentVideoId, channelId: final.channelId || final.author })
   }).catch(e=>console.warn('persist failed', e));
 
-  // show the final winner UI
-  avatarWrap.style.display='flex';
-  avatarImg.src = final.profileImageUrl || avatarImg.src || '/mnt/data/Screenshot 2025-11-19 123255.png';
-  handleEl.style.display='block';
-  handleEl.innerHTML = final.channelId ? `<a href="https://www.youtube.com/channel/${final.channelId}" target="_blank">@${final.author}</a>` : `@${final.author}`;
-  commentBox.style.display='block';
+  // show the final winner UI — place profile image **inside** center circle
+  trophyIcon.style.display = 'none';
+
+  // sanitized author: ensure single @
+  let author = final.author || '';
+  author = author.toString().trim();
+  // remove all leading @ then add single @
+  author = author.replace(/^@+/, '');
+  if(!author) author = final.channelId || 'unknown';
+  const displayHandle = '@' + author;
+
+  // show center avatar
+  centerAvatarImg.src = final.profileImageUrl || centerAvatarImg.src || '';
+  centerAvatar.style.display = 'block';
+
+  // show handle and comment
+  handleEl.style.display = 'block';
+  handleEl.innerHTML = final.channelId ? `<a href="https://www.youtube.com/channel/${final.channelId}" target="_blank">${displayHandle}</a>` : displayHandle;
+  commentBox.style.display = 'block';
   commentBox.textContent = final.comment || '';
 
-  pickAgainBtn.style.display='block';
-  shareRow.style.display='flex';
+  pickAgainBtn.style.display = 'block';
+  shareRow.style.display = 'flex';
   launchConfetti();
 
+  // prepare share link
   const shareUrl = window.location.origin + window.location.pathname + `?videoId=${encodeURIComponent(currentVideoId)}&winner=${encodeURIComponent(final.channelId || final.author)}`;
   shareBtn.onclick = ()=>{ if(navigator.clipboard) navigator.clipboard.writeText(shareUrl); shareMsg.textContent='Link copied'; setTimeout(()=>shareMsg.textContent='',1500); };
 
-  // hide/reset progress ring and re-enable start label (so UI is back to normal)
+  // hide progress ring & re-enable start interaction
   resetProgress();
-  startLabel.textContent = 'START';
+  startLabel.textContent = '';
   startCircle.setAttribute('aria-pressed','false');
   startCircle.style.pointerEvents = 'auto';
-  // hide start box if you prefer to remove it once winner shown — currently keep it visible as original flow
-  // startBox.style.display = 'none';
+  startHintText.style.display = 'none';
 }
 
 /* ---------- start raffle (zero delay) ---------- */
 async function startRaffle(){
-  // choose final locally (fast)
   const final = chooseFinalLocal();
   if(!final){ countText.innerHTML = 'No unique candidates left'; return; }
 
   const seq = buildSequence(final);
 
-  // immediate UI changes
-  // do NOT hide startBox — we keep it visible during the progress animation
-  pickAgainBtn.style.display='none';
-  shareRow.style.display='none';
-  avatarWrap.style.display='flex';
-  handleEl.style.display='block';
-  commentBox.style.display='block';
+  // hide winner UI elements for new run
+  handleEl.style.display = 'none';
+  commentBox.style.display = 'none';
+  pickAgainBtn.style.display = 'none';
+  shareRow.style.display = 'none';
 
-  // disable start while running
+  // ensure trophy is visible, center avatar hidden
+  trophyIcon.style.display = 'block';
+  centerAvatar.style.display = 'none';
+  startLabel.style.display = 'none';
+  startHintText.style.display = 'none';
+
+  // disable clicking while running
   startCircle.setAttribute('aria-pressed','true');
   startCircle.style.pointerEvents = 'none';
-  startLabel.textContent = ''; // center label removed while animating (ring visible)
 
   // start progress ring animation for RAFFLE_DURATION_MS
   animateProgress(RAFFLE_DURATION_MS);
 
-  // start shuffling immediately (no lag)
-  let i=0;
+  // immediately start shuffling names/comments (no lag)
+  let i = 0;
   const iv = setInterval(()=>{
     const c = seq[i];
-    // update avatar + name + comment EVERY tick
-    avatarImg.src = c.profileImageUrl || avatarImg.src || '/mnt/data/Screenshot 2025-11-19 123255.png';
-    handleEl.textContent = '@' + (c.author || '');
+    // update only name and comment while shuffling
+    const authorRaw = c.author || c.channelId || 'unknown';
+    const authorClean = (authorRaw.toString().trim().replace(/^@+/, ''));
+    handleEl.textContent = '@' + authorClean;
+    handleEl.style.display = 'block'; // show handle while shuffling
     commentBox.textContent = c.comment || '';
+    commentBox.style.display = 'block';
+
     i++;
     if(i >= seq.length){
       clearInterval(iv);
-      // small timeout to allow progress ring to finish exactly with raffle duration
-      // but ensure finalize runs after RAFFLE_DURATION_MS in case ticks finish earlier/later
+      // allow finalize at the exact end via timeout below
     }
   }, TICK_MS);
 
-  // ensure finalize runs exactly when ring completes
+  // finalize exactly after RAFFLE_DURATION_MS (tiny buffer)
   setTimeout(()=>{
     finalizeWinner(final);
-  }, RAFFLE_DURATION_MS + 50); // tiny safety buffer
+  }, RAFFLE_DURATION_MS + 40);
 }
 
 /* ---------- UI hooks ---------- */
 startCircle.addEventListener('click', startRaffle);
+pickAgainBtn.addEventListener('click', ()=>{
+  // reset the UI and start a fresh raffle (if comments available)
+  hideWinnerUI();
+  // startLabel should be visible and ready
+  startLabel.style.display = 'block';
+  startLabel.textContent = 'START';
+  startHintText.style.display = 'block';
+  // If you want to auto-start the next raffle, uncomment:
+  // startRaffle();
+});
+
 pickAgainBtn.addEventListener('click', startRaffle);
 
 /* ---------- optional: load via query ---------- */
@@ -434,10 +522,12 @@ pickAgainBtn.addEventListener('click', startRaffle);
             const all = (data.pickPool||[]).concat(data.comments||[]);
             const found = all.find(x => (x.channelId == winner) || (x.author && x.author.toLowerCase() === winner.toLowerCase()));
             if(found){
-              avatarWrap.style.display='flex';
-              avatarImg.src = found.profileImageUrl || avatarImg.src || '/mnt/data/Screenshot 2025-11-19 123255.png';
+              // show winner in center
+              trophyIcon.style.display = 'none';
+              centerAvatarImg.src = found.profileImageUrl || '';
+              centerAvatar.style.display = 'block';
               handleEl.style.display='block';
-              handleEl.innerHTML = found.channelId ? `<a href="https://www.youtube.com/channel/${found.channelId}" target="_blank">@${found.author}</a>` : `@${found.author}`;
+              handleEl.innerHTML = found.channelId ? `<a href="https://www.youtube.com/channel/${found.channelId}" target="_blank">@${(found.author||'').toString().replace(/^@+/, '')}</a>` : `@${(found.author||'').toString().replace(/^@+/, '')}`;
               commentBox.style.display='block';
               commentBox.textContent = found.comment || '';
               pickAgainBtn.style.display='block';
